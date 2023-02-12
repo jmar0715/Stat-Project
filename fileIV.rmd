@@ -1,5 +1,6 @@
 ---
 title: "ProjectPart2"
+author: "James Hu"
 output: html_document
 ---
 
