@@ -1,0 +1,242 @@
+---
+title: ""
+author: "James Hu"
+output: html_document
+---
+
+```{r}
+library(readr)
+Drug_overdose <- read_csv("Drug_overdose_death.csv") 
+
+Drug_od <- data.frame(Drug_overdose)
+
+#Stuff for overall deaths (1999-2017)
+Deathsper <- Drug_od$ESTIMATE
+#print(Deathsper)
+Deathsper100000 <- Deathsper[1:19]
+#print(Deathsallyears)
+numsumall <- summary(Deathsallyears)
+print(numsumall)
+sdall <- sd(Deathsallyears)
+print(sdall)
+
+convert_years <- function(x) {
+  years <- c()
+  for (i in 1:19) {
+    years[i] = x + i
+  }
+  return(years)
+}
+
+years_ <- convert_years(1998)
+deathsandyears <- data.frame(Deathsper100000, years_)
+#print(deathsandyears)
+
+ggplot(deathsandyears, aes(x=years_, y=Deathsper100000)) + geom_point() + geom_smooth(method=lm, se = FALSE)
+
+#GENDER
+Deathsmale <- Deathsper[20:38] #Note: there's two data points here for 2017 so I just left one out
+#print(Deathsmale)
+numsmale <- summary(Deathsmale)
+sdmale <- sd(Deathsmale)
+print(numsmale)
+print(sdmale)
+
+Deathswomen <- Deathsper[40:58]
+#print(Deathswomen)
+numswomen <- summary(Deathswomen)
+sdwomen <- sd(Deathswomen)
+print(numswomen)
+print(sdwomen)
+
+library(tidyverse)
+library(ggplot2)
+Deaths <- c(Deathsmale, Deathswomen)
+Gender <- c()
+Gender[1:19] = "Male"
+Gender[20:38] = "Female"
+boxplotdatagender <- data.frame(Deaths, Gender)
+#print(boxplotdatagender)
+ggplot(boxplotdatagender, aes(Deaths, color=Gender)) + geom_boxplot(fill="white") + labs(title = "Boxplots of Overdose Deaths per 100,000 Residents (By Gender)") + theme(plot.title=element_text(hjust=0.5))
+
+ggplot(boxplotdatagender, aes(x=Deaths, fill=Gender)) + geom_density(alpha=0.4) + labs(title="Overdose Deaths Density Curve (By Gender)", x="Deaths (per 100,000 Residents)", y="Density")
+
+#RACE
+Deathswhite <- Deathsper[59:77]
+Deathswhite <- c(Deathswhite, Deathsper[139:157])
+#print(Deathswhite)
+print(numswhite <- summary(Deathswhite))
+print(sdwhite <- sd(Deathswhite))
+
+Deathsblack <- Deathsper[79:97]
+Deathsblack <- c(Deathsblack, Deathsper[159:177])
+#print(Deathsblack)
+print(numsblack <- summary(Deathsblack))
+print(sdblack <- sd(Deathsblack))
+
+Deathsnative <- Deathsper[99:117]
+Deathsnative <- c(Deathsnative, Deathsper[179:197])
+#print(Deathsnative)
+print(numsnative <- summary(Deathsnative))
+print(sdnative <- sd(Deathsnative))
+
+Deathsasian <- Deathsper[119:137]
+Deathsasian <- c(Deathsasian, Deathsper[199:217])
+#print(Deathsasian)
+print(numsasian <- summary(Deathsasian))
+print(sdasian <- sd(Deathsasian))
+
+Deathshispanic <- Deathsper[219:237]
+Deathshispanic <- c(Deathshispanic, Deathsper[320])
+Deathshispanic <- c(Deathshispanic, Deathsper[322:339])
+#print(Deathshispanic)
+print(numshispanic <- summary(Deathshispanic))
+print(sdhispanic <- sd(Deathshispanic))
+
+Deaths2 <- c(Deathswhite, Deathsblack, Deathsnative, Deathsasian, Deathshispanic)
+print(Deaths2)
+Race <- c()
+Race[1:38] = "White"
+Race[39:76] = "African American"
+Race[77:114] = "Indigenous"
+Race[115:152] = "Asian"
+Race[153:190] = "Hispanic"
+boxplotrace <- data.frame(Deaths2, Race)
+#print(boxplotrace)
+
+ggplot(boxplotrace, aes(Deaths2, color=Race)) + geom_boxplot(fill="white") + labs(title = "Boxplots of Overdose Deaths per 100,000 Residents (By Race)", x = "Deaths", y = "Race") + theme(plot.title=element_text(hjust=0.5))
+
+ggplot(boxplotrace, aes(x=Deaths2, fill=Race)) + geom_density(alpha=0.4) + labs(title="Overdose Deaths Density Curve (By Race)", x="Deaths (per 100,000 Residents)", y="Density")
+
+#PRESIDENCY
+Deaths2001 <- Deathsper[3:6]
+Deaths2005 <- Deathsper[7:10]
+Deaths2009 <- Deathsper[11:14]
+Deaths2013 <- Deathsper[15:18]
+Deathsally <- data.frame(Deaths2001, Deaths2005, Deaths2009, Deaths2013)
+summary(Deathsally) 
+
+presyear <- c()
+presyear[1:4] = "2001-2004"
+presyear[5:8] = "2005-2008"
+presyear[9:12] = "2009-2012"
+presyear[13:16] = "2013-2016"
+
+Deathspres <- c(Deaths2001,Deaths2005,Deaths2009, Deaths2013)
+boxplotpres <- data.frame(Deathspres, presyear)
+
+ggplot(boxplotpres, aes(Deathspres, color=presyear)) + geom_boxplot(fill="white") + labs(title = "Boxplots of Overdose Deaths per 100,000 Residents (By Presidential Term)", x = "Deaths", y = "Terms") + theme(plot.title=element_text(hjust=0.5))
+
+ggplot(boxplotpres, aes(x=Deathspres, fill=presyear)) + geom_density(alpha=0.4) + labs(title="Overdose Deaths Density Curve (By Presidential Term)", x="Deaths (per 100,000 Residents)", y="Density")
+
+```
+
+```{r}
+#AGE
+Deathsu15 <- Deathsper[439:457]
+Deaths1524 <- Deathsper[458:476]
+Deaths2534 <- Deathsper[477:495]
+Deaths3544 <- Deathsper[496:514]
+Deaths4554 <- Deathsper[515:533]
+Deathso55 <- Deathsper[534:609] 
+Deathsallage <- data.frame(Deathsu15, Deaths1524, Deaths2534, Deaths3544, Deaths4554, Deathso55)
+summary(Deathsallage)
+
+agegroup <- c()
+agegroup[1:19] = "15 under"
+agegroup[20:38] = "15-24"
+agegroup[39:57] = "25-34"
+agegroup[58:76] = "35-44"
+agegroup[77:95] = "45-54"
+agegroup[96:171] = "55 and over"
+
+Deathsbyage <- c(Deathsu15, Deaths1524, Deaths2534, Deaths3544, Deaths4554, Deathso55)
+boxplotage <- data.frame(Deathsbyage, agegroup)
+#print(boxplotage)
+
+ggplot(boxplotage, aes(Deathsbyage, color=agegroup)) + geom_boxplot(fill="white") + labs(title = "Boxplots of Overdose Deaths per 100,000 Residents (By Age Group)", x = "Deaths", y = "Age Group") + theme(plot.title=element_text(hjust=0.5))
+
+
+newagegroup <- agegroup[20:171]
+newdeathsbyage <- c(Deaths1524, Deaths2534, Deaths3544, Deaths4554, Deathso55)
+densityage <- data.frame(newdeathsbyage, newagegroup)
+ggplot(densityage, aes(x=newdeathsbyage, fill=newagegroup)) + geom_density(alpha=0.4) + labs(title="Overdose Deaths Density Curve (By Age Group)", x="Deaths (per 100,000 Residents)", y="Density")
+#Excluded the 15 and under age group because it was causing issues 
+
+
+#GENDER AND AGE
+menandage <- c()
+menandage <- Deathsper[646:816]
+genderagegroup <- c()
+genderagegroup[1:19] = "Male and 15 under"
+genderagegroup[20:38] = "Male and 15-24"
+genderagegroup[39:57] = "Male and 25-34"
+genderagegroup[58:76] = "Male and 35-44"
+genderagegroup[77:95] = "Male and 45-54"
+genderagegroup[96:171] = "Male and 55 and over"
+menagebox <- data.frame(menandage, genderagegroup)
+#print(menagebox)
+ggplot(menagebox, aes(menandage, color=genderagegroup)) + geom_boxplot(fill="white") + labs(title = "Boxplots of Overdose Deaths per 100,000 Residents (By Gender and Age)", x = "Deaths", y = "Gender and Age") + theme(plot.title=element_text(hjust=0.5))
+
+men15u <- menandage[1:19]
+men1524 <- menandage[20:38]
+men2534 <- menandage[39:57]
+men3544 <- menandage[58:76]
+men4554 <- menandage[77:95]
+men55o <- menandage[96:171]
+menageall <- data.frame(men15u, men1524, men2534, men3544, men4554, men55o)
+summary(menageall)
+
+womenandage <- c()
+womenandage <- Deathsper[817:987]
+genderagegroup1 <- c()
+genderagegroup1[1:19] = "Female and 15 under"
+genderagegroup1[20:38] = "Female and 15-24"
+genderagegroup1[39:57] = "Female and 25-34"
+genderagegroup1[58:76] = "Female and 35-44"
+genderagegroup1[77:95] = "Female and 45-54"
+genderagegroup1[96:171] = "Female and 55 and over"
+womenagebox <- data.frame(womenandage, genderagegroup1)
+#print(menagebox)
+ggplot(womenagebox, aes(womenandage, color=genderagegroup1)) + geom_boxplot(fill="white") + labs(title = "Boxplots of Overdose Deaths per 100,000 Residents (By Gender and Age)", x = "Deaths", y = "Gender and Age") + theme(plot.title=element_text(hjust=0.5))
+
+women15u <- womenandage[1:19]
+women1524 <- womenandage[20:38]
+women2534 <- womenandage[39:57]
+women3544 <- womenandage[58:76]
+women4554 <- womenandage[77:95]
+women55o <- womenandage[96:171]
+womenageall <- data.frame(women15u, women1524, women2534, women3544, women4554, women55o)
+summary(womenageall)
+
+#Overdose deaths per TYPE of drug 
+anyopioid <- Deathsper[988:1006]
+natandsemiopioid <- Deathsper[1975:1993]
+methadone <- Deathsper[2963:2980] #missing 2002
+othersynthopioid <- Deathsper[3949:3967]
+heroin <- Deathsper[4942:4955] #only goes up to 2012 
+
+summary(anyopioid)
+summary(natandsemiopioid)
+summary(methadone)
+summary(othersynthopioid)
+summary(heroin)
+
+drugtype <- c()
+drugtype[1:19] = "Any Opioid"
+drugtype[20:38] = "Natural and Semisynthetic Opioids"
+drugtype[39:56] = "Methadone"
+drugtype[57:75] = "Other Synthetic Opioids"
+drugtype[76:89] = "Heroin"
+
+drugtypecombine <- c(anyopioid, natandsemiopioid, methadone, othersynthopioid, heroin)
+boxplotdrugtype <- data.frame(drugtypecombine, drugtype)
+#print(boxplotdrugtype)
+
+ggplot(boxplotdrugtype, aes(drugtypecombine, color=drugtype)) + geom_boxplot(fill="white") + labs(title = "Boxplots of Overdose Deaths per 100,000 Residents (By Drug Type)", x = "Deaths", y = "Drug Type") + theme(plot.title=element_text(hjust=0.5))
+ggplot(boxplotdrugtype, aes(x=drugtypecombine, fill=drugtype)) + geom_density(alpha=0.4) + labs(title="Overdose Deaths Density Curve (By Drug Type)", x="Deaths (per 100,000 Residents)", y="Density")
+```
+
+
+
+
