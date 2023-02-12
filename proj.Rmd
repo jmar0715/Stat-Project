@@ -1,0 +1,88 @@
+---
+title: "rmd file for proj"
+author: "me"
+date: "2022-11-06"
+output: html_document
+---
+
+
+```{r}
+recoveryrates <- read.csv('Downloads/Substance_Use_Disorder_Treatment_Program_Admissions__Beginning_2007.csv')
+colnames(recoveryrates)
+agerecovery <- recoveryrates[, c("Age.Group", "Admissions")] #selecting age group and admission numbers
+agesubstancerec <- recoveryrates[, c("Age.Group", "Primary.Substance.Group", "Admissions")]
+
+
+ggplot(agerecovery, aes(x=factor(Age.Group, level = c("Under 18", "18 through 24", "25 through 34", "35 through 44", "45 through 54", "55 and Older")))) + geom_bar(alpha=0.90, colour="blue", fill="white") + labs(x = "Age Group", title = "Treatment Admission Rates by Age Group") + theme(plot.title=element_text(hjust=0.5))
+
+ggplot(agesubstancerec, aes(fill=Primary.Substance.Group, y=Admissions, x=Age.Group)) + geom_bar(position = "fill", stat = "identity") + labs(x = "Age Group", title = "Percent Breakdown of Drugs per Age Group") + theme(plot.title=element_text(hjust=0.5))
+
+
+obs_num <- dim(recoveryrates)[1]
+crisisorno <- vector(mode='character', length=obs_num) #we want to distinguish between diff motives for treatment
+
+for (i in 1:obs_num) {
+  crisis <- recoveryrates$Program.Category[i]
+  if (crisis == "Crisis") {       #on the basis of inferring that Crisis as the program category signals to potential OD
+   crisisorno[i] <- "OD"          #that required immediate attention
+  }
+  else {
+    crisisorno[i] <- "nonOD"
+  }
+}
+
+recoveryrates <- data.frame(cbind(recoveryrates, crisisorno))
+
+
+ggplot(recoveryrates, aes(fill=crisisorno, y=Admissions, x=Age.Group)) + geom_bar(position = "dodge", stat = "identity") + labs(x = "Age Group", title = "Evaluating OD's as Reason for Rehabilitation Checkins") + theme(plot.title=element_text(hjust=0.5))
+
+install.packages("maps")
+library(maps)
+library(ggmap)
+library(ggplot2)
+
+bystate <- read.csv('Downloads/Data-Table.csv')
+deathsbystate <- bystate[ ,c("STATE", "RATE")]    #deaths meaning OD deaths in particular
+deathsbystate <-cbind(deathsbystate, state.name)
+states <- tolower(deathsbystate$state.name) #lining up state names to be able to map it
+deathsbystate <- cbind(deathsbystate, states)
+colnames(deathsbystate)[4] <- "region"
+states_map <- ggplot2::map_data("state")
+deaths_map <- left_join(states_map, deathsbystate, by = "region")
+
+ggplot(deaths_map, aes(long, lat, group = group)) + geom_polygon(aes(fill = RATE), color = "white") + scale_fill_viridis_c(option = "C") + labs(title = "Rate of Drug Deaths by State from 1999 to 2020") + theme(plot.title=element_text(hjust=0.5))
+
+library(dplyr)
+library(magrittr)
+incomebystate <- read.csv('Downloads/BEA-Personal-Income/BEA - EDDs - Personal Income.csv')
+colnames(incomebystate)
+alteredincomestate <- incomebystate[incomebystate$Linecode == "30", ] #corresponds to per capital income
+summarizincome <- alteredincomestate %>% #way to simplify processes above by using pipe
+  group_by(State) %>%
+  summarise(mean = mean(Data))
+
+ggplot(summarizincome, aes(x = State, y = mean)) + geom_bar(alpha=0.90, colour="blue", fill="orange", stat = "identity") + labs(x = "States", title = "Per Capita Income by State") + theme(plot.title=element_text(hjust=0.5))
+
+oddeath <- bystate %>%
+  group_by(STATE) %>%
+  summarise(mean2 = mean(RATE))
+
+ggplot(oddeath, aes(x = STATE, y = mean2)) + geom_bar(alpha=0.90, colour="red", fill="white", stat = "identity") + labs(x = "States", title = "OD Death Rates by State") + theme(plot.title=element_text(hjust=0.5))
+
+
+suiciderates <- read.csv('Downloads/data-table-3.csv')
+suiciderates <-cbind(suiciderates, state.name) #same processes of lining up state name as above
+states <- tolower(suiciderates$state.name)
+suiciderates <- cbind(suiciderates, states)
+colnames(suiciderates)[7] <- "region"
+states_map <- ggplot2::map_data("state")
+suicide_map <- left_join(states_map, suiciderates, by = "region")
+
+ggplot(suicide_map, aes(long, lat, group = group)) + geom_polygon(aes(fill = RATE), color = "white") + scale_fill_viridis_c(option = "C") + labs(title = "Rate of Suicide Deaths by State from 1999 to 2020") + theme(plot.title=element_text(hjust=0.5))
+
+alldeaths <- merge(suiciderates, bystate, by = "YEAR")
+
+ 
+
+```
+
