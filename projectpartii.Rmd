@@ -1,0 +1,276 @@
+---
+title: "partii"
+author: "Jianna Martinez"
+date: "2022-12-12"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+
+write.csv(recoveryrates2, file = 'Downloads/Substance_Use_Disorder_Treatment_Program_Admissions__Beginning_2007.csv')
+
+##a chi-square test will be conducted between the categorical variable of Primary Substance Group and whether the patient was checked in (to rehabilitation) for a reason of crisis or not
+
+#first, since Primary Substance Group has more than 2 categories/levels, we will be investigating the substance groups of alcohol and 'all others' (which is defined by any class of drug that is not alcohol nor opioids)
+#CHECK FOR ASSUMPTIONS
+
+install.packages("dplyr")
+install.packages("janitor")
+library(dplyr)
+library(ggplot2)
+library(magrittr)
+library(tidyverse)
+library(janitor)
+
+head(recoveryrates2)
+
+analysis_vars <- recoveryrates2 %>%
+       select(Primary.Substance.Group, crisisorno) %>%
+       filter(Primary.Substance.Group %in% c("Alcohol", "All Others"))
+
+drug_rehabtype_count_table <- table(analysis_vars$Primary.Substance.Group, analysis_vars$crisisorno)
+print(drug_rehabtype_count_table)
+
+drug_rehabtype_perc_table <- tabyl(analysis_vars, Primary.Substance.Group, crisisorno) %>%
+                       adorn_percentages("col") %>%
+                       adorn_pct_formatting(digits = 2)
+
+print(drug_rehabtype_perc_table) 
+
+ggplot(analysis_vars, aes(Primary.Substance.Group)) + geom_bar(aes(fill = crisisorno))
+
+chi_square_analysis <- chisq.test(analysis_vars$Primary.Substance.Group, analysis_vars$crisisorno)
+print(chi_square_analysis)
+
+expected_values <- chi_square_analysis$expected
+print(expected_values)
+#expected values are all greater than five so can conduct this test
+
+#confidence interval
+print(drug_rehabtype_count_table)
+
+prop.test(x = c(16341, 3644), n = c(26245, 6563))
+
+#since the p-value is less than the alpha value of 0.05, we can reject the null hypothesis that states that there is no association between category of drug and admissions into rehab due to reasons of crisis (OD)
+
+#2ND ANALYSIS
+
+#for this next analysis, we will be utilizing more than one dataframe from part 1 of the first project, to investigate a potential relationship between OD death rates and income
+#CHECK FOR ASSUMPTIONS
+
+write.csv(oddeath, file = 'Downloads/Data-Table.csv')
+write.csv(summarizincome, file = 'Downloads/BEA-Personal-Income/BEA - EDDs - Personal Income.csv')
+
+#merge both dataframes by state
+print(oddeath)
+print(summarizincome)
+
+incomeOD <- merge(oddeath, summarizincome, by.x = "STATE", by.y = "State")
+print(incomeOD)
+
+#changing column names for clarification
+colnames(incomeOD) <- c("STATE", "ODRate", "MeanIncome")
+print(incomeOD)
+
+#creating scatter plot
+ggplot(data=incomeOD) + geom_point(mapping = aes(x = ODRate, y = MeanIncome))
+
+#corr coeff
+corr_odincome_eff <- cor(incomeOD$ODRate,incomeOD$MeanIncome)
+print(corr_odincome_eff)
+
+#least squares regression line plot
+ggplot(data=incomeOD, aes(x = ODRate, y = MeanIncome)) + geom_point() + geom_smooth(method="lm")
+
+#part of regression line eq
+incomeod_model <- lm(MeanIncome ~ ODRate, data = incomeOD)
+print(incomeod_model)
+
+#residuals
+residuals<-resid(incomeod_model)
+print(residuals)
+
+hist(residuals)
+
+#normalized
+qqnorm(residuals)
+
+#residual plot
+plot(fitted(incomeod_model), residuals)
+
+standard_residuals <- rstandard(incomeod_model)
+print(standard_residuals)
+
+#standardized residual plot
+plot(fitted(incomeod_model), standard_residuals)
+#since residual plot is random, this confirms that any error is only due to random error between both variables
+
+#combine
+income_rate <- incomeOD[c("ODRate", "MeanIncome")]
+income_rate_stdres <- cbind(rate_income, standard_residuals)
+print(income_rate_stdres)
+
+#removing necessary s resid 
+income_rate_analysis <- income_rate_stdres %>% filter(between(standard_residuals, -2, 2))
+print(income_rate_analysis)
+
+summary(lm(MeanIncome ~ ODRate, data = income_rate_analysis))
+
+#since the absolute value of the correlation coefficient is close to 0, and on top of this, the regression line eq also contains a slope close to zero, we can conclude that there is a weak relationship between OD death rate and income. However, the fact that the correlation coefficient value is negative might be notable. From this, it is probable that there are many other variables at hand that make it difficult to see a strong relationship between both variables.
+
+#next, since for part 1 of the project we also investigated suicide rates by state, it would be interesting to investigate this variable in relation to the two above in a multiple regression line analysis 
+
+#CHECK FOR ASSUMPTIONS
+
+write.csv(suiciderates, file = 'Downloads/data-table-3.csv')
+head(suiciderates)
+
+#since this dataframe has data for each year, we will take the means for all years
+suiciderates2 <- suiciderates %>%
+  group_by(STATE) %>%
+  summarise(suiciderateyrs = mean(RATE))
+#merge
+incomeODsuic <- merge(incomeOD, suiciderates2, by = "STATE")
+head(incomeODsuic)
+
+ggplot(data=incomeODsuic) + geom_point(mapping = aes(x = ODRate, y = MeanIncome))
+ggplot(data=incomeODsuic) + geom_point(mapping = aes(x = suiciderateyrs, y = MeanIncome))
+
+#corr coeff for second set (since the first was calc above)
+corr_suicincome_eff <- cor(incomeODsuic$suiciderateyrs,incomeODsuic$MeanIncome)
+print(corr_suicincome_eff)
+
+#corr between explanatory
+corr_odsuic_eff <- cor(incomeODsuic$ODRate,incomeODsuic$suiciderateyrs)
+print(corr_odsuic_eff)
+
+#multiple regression model
+reg_model <- lm(MeanIncome ~ ODRate + suiciderateyrs, data = incomeODsuic)
+print(reg_model)
+
+#residuals
+residuals <-resid(reg_model)
+print(residuals)
+
+#histogram
+hist(residuals)
+
+#Normal probability plot of the residuals
+qqnorm(residuals)
+
+#residual plot
+plot(fitted(reg_model), residuals)
+#residual plot scatter (good and can conduct test)
+
+#standard residuals
+standard_residuals <- rstandard(reg_model)
+print(standard_residuals)
+
+#standardized residual plot
+plot(fitted(reg_model), standard_residuals)
+
+#Combine regression variables with standard residuals.
+inc_od_suic <- incomeODsuic[c("MeanIncome", "ODRate", "suiciderateyrs")]
+inc_od_suic_stdres <- cbind(inc_od_suic, standard_residuals)
+print(inc_od_suic_stdres)
+
+#Remove standard residuals that are greater than 2 or less than -2.
+reg_analysis <- inc_od_suic_stdres %>% filter(between(standard_residuals, -2, 2))
+print(reg_analysis)
+
+summary(lm(MeanIncome ~ ODRate + suiciderateyrs, data = reg_analysis))
+
+#the r^2 value of ---- (& then continue to explain depending on which value)
+
+#FOURTH ANALYSIS: t-test looking at admission rates and age group
+print(agerecovery)
+#assumptions: sampled independently, the sample is greater than 40 as we can see by using nrow() function
+nrow(agerecovery)
+#since a t test requires investigating a difference between TWO samples, we must aggregate the different age groups: the first 3 (in order of youngest to oldest) will be classified as 34 or younger and the other as older than 34
+#null hypothesis: there is no population mean difference between Admission Check ins in the former age group versus the latter
+#alternative: there is a statistically significant population mean difference between both these age groups
+
+agerecovery$Age.Group <- gsub("Under 18", "34 or younger", agerecovery$Age.Group)
+agerecovery$Age.Group <- gsub("18 through 24", "34 or younger", agerecovery$Age.Group)
+agerecovery$Age.Group <- gsub("25 through 34", "34 or younger", agerecovery$Age.Group)
+agerecovery$Age.Group <- gsub("35 through 44", "older than 34", agerecovery$Age.Group)
+agerecovery$Age.Group <- gsub("45 through 54", "older than 34", agerecovery$Age.Group)
+agerecovery$Age.Group <- gsub("55 and Older", "older than 34", agerecovery$Age.Group)
+
+print(agerecovery)
+#boxplot
+ggplot(agerecovery, aes(x=Admissions, y=Age.Group, group=Age.Group)) + geom_boxplot()
+
+ggplot(agerecovery, aes(Admissions, Age.Group)) + geom_boxplot(colour = "blue", fill = "grey", outlier.colour = "black", outlier.shape = 16, outlier.size = 2) + ggtitle("Admissions into Rehab Programs by Age Group")
+
+t.test(Admissions~Age.Group, data=agerecovery, var.equal=FALSE)
+
+#since the p-value is less than 0.05, we can reject the null hypothesis that there is no mean population difference between both these age groups.
+
+
+#FIFTH ANALYSIS: chi square investigating gender differences
+#investigating association between age group and whether checked in to rehab because of crisis or not (place after first chi square test)
+head(agerecovery)
+ac <- cbind(agerecovery$Age.Group, recoveryrates2$crisisorno)
+age_crisis <- as.data.frame(ac)
+
+age_rehabtype_count_table <- table(age_crisis$V1, age_crisis$V2)
+print(age_rehabtype_count_table)
+
+age_rehabtype_perc_table <- tabyl(age_crisis, V1, V2) %>%
+                       adorn_percentages("col") %>%
+                       adorn_pct_formatting(digits = 2)
+
+print(age_rehabtype_perc_table) 
+
+ggplot(age_crisis, aes(V1)) + geom_bar(aes(fill = V2))
+
+chi_square_analysis <- chisq.test(age_crisis$V1, age_crisis$V2)
+print(chi_square_analysis)
+
+expected_values <- chi_square_analysis$expected
+print(expected_values)
+#expected values are all greater than five so can conduct this test
+
+print(age_rehabtype_count_table)
+
+prop.test(x = c(39152, 7685), n = c(81235, 18132))
+
+#since the p-value is less than 0.05, we can reject the null hypothesis which states that there is no association between Age Group and reasons for check ins
+
+#SIXTH ANALYSIS
+#here we will be investigating as to whether there might be an association between gender and kind of opiate overdosed on (pharmaceutical or street/heroine)
+#null: no association between classification of opiate and gender
+#alternative: there is an association between both variables
+opiate <- read.csv("Downloads/Opiate_Overdoses_by_Age_Range__Gender__and_Drug_Type_FY_2018.csv")
+head(opiate)
+
+analysis_vars <- opiate %>%
+       select(PCR_Patient_Gender, Substance) %>%
+       filter(PCR_Patient_Gender %in% c("Female", "Male"), Substance %in% c("Heroin/Street", "Pharmacy"))
+
+opiate_gender_count_table <- table(analysis_vars$PCR_Patient_Gender, analysis_vars$Substance)
+print(opiate_gender_count_table)
+
+opiate_gender_perc_table <- tabyl(analysis_vars, PCR_Patient_Gender, Substance) %>%
+                       adorn_percentages("col") %>%
+                       adorn_pct_formatting(digits = 2)
+print(opiate_gender_perc_table)
+
+ggplot(analysis_vars, aes(PCR_Patient_Gender)) + geom_bar(aes(fill = Substance))
+
+chi_square_analysis <- chisq.test(analysis_vars$PCR_Patient_Gender, analysis_vars$Substance)
+print(chi_square_analysis)
+
+expected_values <- chi_square_analysis$expected
+print(expected_values)
+
+#expected values are all greater than 5, so we can conduct this test
+
+print(opiate_gender_count_table)
+
+prop.test(x = c(56, 44), n = c(229, 96))
+
+#because the p-value is less than 0.05, we can reject the null hypothesis that states that there is no association between gender and kind of opiate
+
+```
