@@ -1,0 +1,236 @@
+---
+title: "ProjectPart2"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+```{r}
+#T-TESTS FOR DRUG_OVERDOSE_DEATH DATASET (US OVER A PERIOD OF 19 YEARS)
+
+#GENDER
+library(readr)
+#Reading in the gender data from part 1
+genderodstats <- read.csv("~/Desktop/genderod1.csv")
+head(genderodstats)
+
+library(dplyr)
+library(ggplot2)
+summary_stats_by_gender <- genderodstats %>%
+       select(Gender, Deaths) %>%
+       group_by(Gender) %>%
+       summarize(n = n(), mean = mean(Deaths, na.rm=TRUE), sd = sd(Deaths, na.rm=TRUE))
+print(summary_stats_by_gender)
+#Note: While it says n=19 here, the original data that was collected had an n much larger than 40 for both groups. Using that original data with a large number of observations, overdose rates were calculated for each year that the data was originally collected. The mean provided by summary_stats_by_gender is the mean OF those overdose rates across 19 years. Given that the null hypothesis we want to test is that there's no significant difference between overdose deaths of men versus women, the sample size condition is still properly met to conduct a t-test. This note applies to all four variables being tested from this dataset. 
+
+ggplot(genderodstats, aes(Deaths, Gender)) + geom_boxplot(colour = "blue", fill = "grey", outlier.colour = "black", outlier.shape = 16, outlier.size = 2) + ggtitle("Overdose Deaths by Gender in the US")
+
+#Note: the random sample and independence conditions are also met. 
+t.test(Deaths~Gender, data=genderodstats, equal.var=FALSE)
+#p-value small so yas significant 
+
+#RACE - WHITE VERSUS ASIAN 
+raceodstats <- read.csv("~/Desktop/raceod.csv")
+#print(raceodstats)
+
+analysis_vars1 <- raceodstats %>%
+       select(Deaths2, Race) %>%
+       filter(Race %in% c("Asian", "White"))
+#print(analysis_vars1)
+
+summary_stats_by_race1 <- analysis_vars1 %>%
+       select(Race, Deaths2) %>%
+       group_by(Race) %>%
+       summarize(n = n(), mean = mean(Deaths2, na.rm=TRUE), sd = sd(Deaths2, na.rm=TRUE))
+print(summary_stats_by_race1)
+
+ggplot(analysis_vars1, aes(Deaths2, Race)) + geom_boxplot(colour = "blue", fill = "grey", outlier.colour = "black", outlier.shape = 16, outlier.size = 2) + ggtitle("Overdose Deaths by Race in the US")
+
+t.test(Deaths2~Race, data=analysis_vars1, equal.var=FALSE)
+
+#RACE - WHITE VERSUS INDIGENOUS
+analysis_vars2 <- raceodstats %>%
+       select(Deaths2, Race) %>%
+       filter(Race %in% c("Indigenous", "White"))
+#print(analysis_vars2)
+
+summary_stats_by_race2 <- analysis_vars2 %>%
+       select(Race, Deaths2) %>%
+       group_by(Race) %>%
+       summarize(n = n(), mean = mean(Deaths2, na.rm=TRUE), sd = sd(Deaths2, na.rm=TRUE))
+print(summary_stats_by_race2)
+
+ggplot(analysis_vars2, aes(Deaths2, Race)) + geom_boxplot(colour = "blue", fill = "grey", outlier.colour = "black", outlier.shape = 16, outlier.size = 2) + ggtitle("Overdose Deaths by Race in the US")
+
+t.test(Deaths2~Race, data=analysis_vars2, equal.var=FALSE)
+
+#AGE -- specifically comparing 25-34 and 35-44
+ageodstats <- read.csv("~/Desktop/ageod.csv")
+#print(ageodstats)
+
+analysis_vars3 <- ageodstats %>%
+       select(agegroup, Deathsbyage) %>%
+       filter(agegroup %in% c("25-34", "35-44"))
+#print(analysis_vars3)
+
+summary_stats_by_age <- analysis_vars3 %>%
+       select(agegroup, Deathsbyage) %>%
+       group_by(agegroup) %>%
+       summarize(n = n(), mean = mean(Deathsbyage, na.rm=TRUE), sd = sd(Deathsbyage, na.rm=TRUE))
+print(summary_stats_by_age)
+
+ggplot(analysis_vars3, aes(Deathsbyage, agegroup)) + geom_boxplot(colour = "blue", fill = "grey", outlier.colour = "black", outlier.shape = 16, outlier.size = 2) + ggtitle("Overdose Deaths by Age Group in the US")
+
+t.test(Deathsbyage~agegroup, data=analysis_vars3, equal.var=FALSE)
+
+#DRUG TYPE -- specifically comparing any opioid to methadone because methadone is used in harm reduction 
+drugtypeodstats <- read.csv("~/Desktop/drugtypeod.csv")
+#print(drugtypeodstats)
+
+analysis_vars4 <- drugtypeodstats %>%
+       select(drugtype, drugtypecombine) %>%
+       filter(drugtype %in% c("Any Opioid", "Methadone"))
+#print(analysis_vars4)
+
+summary_stats_by_drugtype <- analysis_vars4 %>%
+       select(drugtype, drugtypecombine) %>%
+       group_by(drugtype) %>%
+       summarize(n = n(), mean = mean(drugtypecombine, na.rm=TRUE), sd = sd(drugtypecombine, na.rm=TRUE))
+print(summary_stats_by_drugtype)
+
+ggplot(analysis_vars4, aes(drugtypecombine, drugtype)) + geom_boxplot(colour = "blue", fill = "grey", outlier.colour = "black", outlier.shape = 16, outlier.size = 2) + ggtitle("Overdose Deaths by Drug Type in the US")
+
+t.test(drugtypecombine~drugtype, data=analysis_vars4, equal.var=FALSE)
+```
+
+```{r}
+#LIN REG 1 FOR OPIOID_OVERDOSE_DEATHS DATASET
+
+#Crude Rate versus Population. Crude Rate = Deaths per 100,000
+opioidoverdosedeaths <- read.csv("~/Desktop/Opioid_Overdose_Deaths.csv")
+head(opioidoverdosedeaths)
+names(opioidoverdosedeaths)
+
+newopioiddata <- opioidoverdosedeaths[ , c("Crude.Rate", "Population")]
+class(newopioiddata)
+
+DeathsPer100K <- as.numeric(newopioiddata$Crude.Rate)
+Population1 <- as.numeric(newopioiddata$Population)
+temp3 <- data.frame(DeathsPer100K, Population1)
+finalopioiddata <- na.omit(temp3)
+#print(finalopioiddata)
+
+ggplot(data=finalopioiddata) + geom_point(mapping = aes(x = Population1, y = DeathsPer100K))
+
+corr_CR_Pop <- cor(finalopioiddata$Population1, finalopioiddata$DeathsPer100K, use = "complete.obs" )
+print(corr_CR_Pop)
+
+ggplot(data=finalopioiddata, aes(x = Population1, y = DeathsPer100K)) + geom_point() + geom_smooth(method="lm")
+
+#LIN REG
+CR_Pop_Model <- lm(DeathsPer100K ~ Population1, data = finalopioiddata)
+print(CR_Pop_Model)
+
+#Residuals
+residuals <- resid(CR_Pop_Model)
+#print(residuals)
+
+#Histogram of the residuals
+hist(residuals)
+
+#Normal probability plot of the residuals -- not including in presentation
+qqnorm(residuals)
+
+#Resid Plot -- not the one included in presentation
+plot(fitted(CR_Pop_Model), residuals)
+
+#Standard residuals
+standard_residuals <- rstandard(CR_Pop_Model)
+#print(standard_residuals)
+length(standard_residuals)
+#length is 772
+
+#Standardized residual plot
+plot(fitted(CR_Pop_Model), standard_residuals)
+
+#Combine REG VARS W/ SRs
+CR_Pop <- na.omit(finalopioiddata[c("Population1", "DeathsPer100K")])
+CR_Pop_stdres <- cbind(CR_Pop, standard_residuals)
+#print(CR_Pop_stdres)
+dim(CR_Pop_stdres)
+
+#Remove standard residuals that are greater than 2 or less than -2.
+CR_Pop_Analysis <- CR_Pop_stdres %>% filter(between(standard_residuals, -2, 2))
+#print(CR_Pop_Analysis)
+dim(CR_Pop_Analysis)
+
+#LIN REG ANALYSIS
+summary(lm(DeathsPer100K ~ Population1, data = CR_Pop_Analysis))
+```
+
+
+```{r}
+#LIN REG 2 FOR OPIOID_OVERDOSE_DEATHS DATASET
+
+#Deaths vs. Prescriptions Dispensed by US Retailers That Year (Millions)
+newopioiddata1 <- opioidoverdosedeaths[ , c("Deaths", "Prescriptions.Dispensed.by.US.Retailers.in.that.year..millions.")]
+
+Deaths3 <- as.numeric(newopioiddata1$Deaths)
+PrescriptionsDispensedByMillionsThatYear <- as.numeric(newopioiddata1$Prescriptions.Dispensed.by.US.Retailers.in.that.year..millions.)
+temp3 <- data.frame(Deaths3, PrescriptionsDispensedByMillionsThatYear)
+finalopioiddata1 <- na.omit(temp3)
+#print(finalopioiddata1)
+
+ggplot(data=finalopioiddata1) + geom_point(mapping = aes(x = PrescriptionsDispensedByMillionsThatYear, y = Deaths3))
+
+corr_Death_Pre <- cor(finalopioiddata1$PrescriptionsDispensedByMillionsThatYear, finalopioiddata1$Deaths3, use = "complete.obs" )
+print(corr_CR_Pop)
+
+ggplot(data=finalopioiddata1, aes(x = PrescriptionsDispensedByMillionsThatYear, y = Deaths3)) + geom_point() + geom_smooth(method="lm")
+
+#LIN REG
+Death_Pre_Model <- lm(Deaths3 ~ PrescriptionsDispensedByMillionsThatYear, data = finalopioiddata1)
+print(Death_Pre_Model)
+
+#Residuals
+residuals1 <- resid(Death_Pre_Model)
+
+#Histogram of the residuals
+hist(residuals1)
+
+#Normal probability plot of the residuals -- not including in presentation
+qqnorm(residuals1)
+
+#Resid Plot -- not the one included in presentation
+plot(fitted(Death_Pre_Model), residuals1)
+
+#Standard residuals
+standard_residuals1 <- rstandard(Death_Pre_Model)
+length(standard_residuals1)
+#length is 803
+
+#Standardized residual plot
+plot(fitted(Death_Pre_Model), standard_residuals1)
+
+#Combine REG VARS W/ SRs
+Death_Pre_stdres <- cbind(finalopioiddata1, standard_residuals1)
+#print(Death_Pre_stdres)
+#dim(Death_Pre_stdres)
+
+#Remove standard residuals that are greater than 2 or less than -2.
+Death_Pre_Analysis <- Death_Pre_stdres %>% filter(between(standard_residuals1, -2, 2))
+#print(Death_Pre_Analysis)
+dim(Death_Pre_Analysis)
+
+#LIN REG ANALYSIS
+summary(lm(Deaths3 ~ PrescriptionsDispensedByMillionsThatYear, data = Death_Pre_Analysis))
+```
+
+
+
+
+
